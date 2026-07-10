@@ -6,20 +6,48 @@ const proofOfDelivery = document.getElementById("proof");
 
 const registerBtn = document.getElementById("register-btn");
 const updateBtn = document.getElementById("update-btn");
-const prevNext = document.getElementById("prev-next");
 const findBtn = document.getElementById("find-btn");
 const newBtn = document.getElementById("new-btn");
+const prevBtn = document.getElementById("previous-btn");
+const nextBtn = document.getElementById("next-btn");
 
 const API_BASE_URL = "http://localhost:3000/delivery";
 let findMode = true;
+let currentRecordBaseline = null;
 
 function setFindMode(isFindMode) {
     findMode = isFindMode;
     findBtn.classList.toggle("active", findMode);
     newBtn.classList.toggle("active", !findMode);
+    deliveryId.disabled = !findMode;
+    if (nextBtn) {
+        nextBtn.classList.toggle("d-none", !findMode);
+    }
     if (!findMode) {
         toggleFormMode(false);
     }
+}
+
+function getCurrentFormValues() {
+    return {
+        orderId: orderId.value || "",
+        deliveryDate: deliveryDate.value || "",
+        remarks: remarks.value || "",
+        proofOfDelivery: proofOfDelivery.value || "",
+    };
+}
+
+function setCurrentRecordBaseline(values) {
+    currentRecordBaseline = values ? { ...values } : null;
+}
+
+function hasUnsavedChanges() {
+    if (!currentRecordBaseline) {
+        return false;
+    }
+
+    const currentValues = getCurrentFormValues();
+    return Object.keys(currentValues).some((key) => currentValues[key] !== currentRecordBaseline[key]);
 }
 
 function toggleFormMode(isUpdateMode) {
@@ -38,6 +66,7 @@ function clearFields() {
     deliveryDate.value = "";
     remarks.value = "";
     proofOfDelivery.value = "";
+    setCurrentRecordBaseline(null);
 }
 
 async function loadOrderIds() {
@@ -207,7 +236,7 @@ registerBtn.addEventListener("click", async () => {
     }
 });
 
-updateBtn.addEventListener("click", async () => {
+async function saveCurrentDelivery() {
     if (!deliveryId.value.trim()) {
         Swal.fire({
             position: "center",
@@ -215,7 +244,7 @@ updateBtn.addEventListener("click", async () => {
             title: "Please enter a Delivery ID to update",
             showConfirmButton: true,
         });
-        return;
+        return false;
     }
 
     try {
@@ -243,6 +272,10 @@ updateBtn.addEventListener("click", async () => {
             showConfirmButton: false,
             timer: 1500,
         });
+
+        setCurrentRecordBaseline(getCurrentFormValues());
+        toggleFormMode(true);
+        return true;
     } catch (err) {
         console.error(err);
         Swal.fire({
@@ -252,21 +285,38 @@ updateBtn.addEventListener("click", async () => {
             showConfirmButton: false,
             timer: 1500,
         });
+        return false;
     }
+}
+
+updateBtn.addEventListener("click", async () => {
+    if (!hasUnsavedChanges()) {
+        Swal.fire({
+            position: "center",
+            icon: "info",
+            title: "No changes are made to update",
+            showConfirmButton: true,
+        });
+        return;
+    }
+
+    await saveCurrentDelivery();
 });
 
-document.getElementById("next-btn").addEventListener("click", async () => {
+async function navigateToRecord(action) {
     let id = deliveryId.value.trim();
     if (!id) id = 0;
 
+    const endpoint = action === "next" ? `${API_BASE_URL}/next/${id}` : `${API_BASE_URL}/previous/${id}`;
+
     try {
-        const response = await fetch(`${API_BASE_URL}/next/${id}`);
+        const response = await fetch(endpoint);
 
         if (!response.ok) {
             Swal.fire({
                 position: "center",
                 icon: "info",
-                title: "End of Delivery list reached",
+                title: action === "next" ? "End of Delivery list reached" : "Reached the beginning of Delivery list",
                 showConfirmButton: false,
                 timer: 1500,
             });
@@ -279,43 +329,67 @@ document.getElementById("next-btn").addEventListener("click", async () => {
         deliveryDate.value = data.deliveryDate ? data.deliveryDate.split("T")[0] : "";
         remarks.value = data.remarks || "";
         proofOfDelivery.value = data.proofOfDelivery || "";
+        setCurrentRecordBaseline(getCurrentFormValues());
         toggleFormMode(true);
     } catch (err) {
         console.error(err);
     }
-});
+}
 
-document.getElementById("previous-btn").addEventListener("click", async () => {
-    let id = deliveryId.value.trim();
-    if (!id) return;
+async function handleNavigation(action) {
+    if (!findMode) {
+        if (action === "previous") {
+            setFindMode(true);
+        }
+        return;
+    }
 
-    try {
-        const response = await fetch(`${API_BASE_URL}/previous/${id}`);
+    if (!hasUnsavedChanges()) {
+        await navigateToRecord(action);
+        return;
+    }
 
-        if (!response.ok) {
-            Swal.fire({
-                position: "center",
-                icon: "info",
-                title: "Reached the beginning of Delivery list",
-                showConfirmButton: false,
-                timer: 1500,
-            });
+    const result = await Swal.fire({
+        title: "Some unsaved changes are made to the existing data",
+        icon: "warning",
+        showDenyButton: true,
+        showCancelButton: true,
+        confirmButtonText: "Save and Continue",
+        denyButtonText: "Continue",
+        cancelButtonText: "Exit",
+        reverseButtons: true,
+    });
+
+    if (result.isDismissed) {
+        return;
+    }
+
+    if (result.isConfirmed) {
+        const saved = await saveCurrentDelivery();
+        if (!saved) {
             return;
         }
-
-        const data = await response.json();
-        deliveryId.value = data.deliveryId;
-        orderId.value = data.orderId || "";
-        deliveryDate.value = data.deliveryDate ? data.deliveryDate.split("T")[0] : "";
-        remarks.value = data.remarks || "";
-        proofOfDelivery.value = data.proofOfDelivery || "";
-        toggleFormMode(true);
-    } catch (err) {
-        console.error(err);
     }
-});
+
+    if (result.isConfirmed || result.isDenied) {
+        await navigateToRecord(action);
+    }
+}
+
+if (nextBtn) {
+    nextBtn.addEventListener("click", async () => {
+        await handleNavigation("next");
+    });
+}
+
+if (prevBtn) {
+    prevBtn.addEventListener("click", async () => {
+        await handleNavigation("previous");
+    });
+}
 
 loadOrderIds();
+setFindMode(true);
 toggleFormMode(false);
 
 // initialize bootstrap popovers for any info buttons (click/focus)

@@ -53,21 +53,74 @@ router.get("/customers", async (req, res) => {
             `SELECT CUSTOMERID, CUSTOMERNAME FROM CUSTOMER ORDER BY CUSTOMERID`
         );
 
-        let htmlString = '<option value="">Select Customer</option>';
+        const customers = (result.rows || []).map(row => ({
+            customerId  : row[0],
+            customerName: row[1]
+        }));
 
-        if (result.rows && result.rows.length > 0) {
-            result.rows.forEach(row => {
-                htmlString += `<option value="${row[0]}">${row[0]} - ${row[1]}</option>`;
-            });
-        }
-        res.setHeader('Content-Type', 'text/html');
-        res.status(200).send(htmlString);
+        res.json(customers);
     } 
     catch (err) {
         console.error(err);
-        return res.status(500).send('<option value="">Error Loading Customers</option>');
+        return res.status(500).json({ message: "Error Loading Customers" });
     } 
     finally {
+        if (connection) await connection.close();
+    }
+});
+
+
+// ── Customers NOT yet in DispatchOrder (for New & Update modes) ──
+// Optional query param: ?excludeOrderId=N
+//   Without it  → New mode   : excludes ALL customers already in DISPATCHORDER
+//   With it     → Update mode: excludes customers in OTHER orders, but keeps
+//                              the current order's customer selectable
+router.get("/customers/available", async (req, res) => {
+    let connection;
+    const excludeOrderId = req.query.excludeOrderId ? Number(req.query.excludeOrderId) : null;
+
+    try {
+        connection = await getConnection();
+
+        let sql, binds;
+
+        if (excludeOrderId) {
+            // Update mode: hide customers that belong to ANOTHER dispatch order
+            // (the current order's customer is intentionally still shown)
+            sql = `SELECT CUSTOMERID, CUSTOMERNAME
+                     FROM CUSTOMER
+                    WHERE CUSTOMERID NOT IN (
+                          SELECT DISTINCT CUSTOMERID
+                            FROM DISPATCHORDER
+                           WHERE CUSTOMERID IS NOT NULL
+                             AND ORDERID != :1
+                    )
+                    ORDER BY CUSTOMERID`;
+            binds = [excludeOrderId];
+        } else {
+            // New mode: hide every customer that already has ANY dispatch order
+            sql = `SELECT CUSTOMERID, CUSTOMERNAME
+                     FROM CUSTOMER
+                    WHERE CUSTOMERID NOT IN (
+                          SELECT DISTINCT CUSTOMERID
+                            FROM DISPATCHORDER
+                           WHERE CUSTOMERID IS NOT NULL
+                    )
+                    ORDER BY CUSTOMERID`;
+            binds = [];
+        }
+
+        const result = await connection.execute(sql, binds);
+        const customers = (result.rows || []).map(row => ({
+            customerId  : row[0],
+            customerName: row[1]
+        }));
+
+        res.json(customers);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Error loading available customers" });
+    } finally {
         if (connection) await connection.close();
     }
 });

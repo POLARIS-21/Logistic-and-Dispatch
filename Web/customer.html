@@ -11,14 +11,12 @@
             body {
                 background-color: #f9f9f9;
                 font-family: Arial, Helvetica, sans-serif;
-                overflow-y: hidden;
-                /* Strictly locks the viewport vertical plane to prevent scrollbars */
+                min-height: 100vh;
             }
 
             .main-form {
                 width: 90vw;
-                max-height: 95vh;
-                /* Prevents container from stretching past screen limits */
+                min-height: 90vh;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
@@ -28,8 +26,31 @@
                 background-color: #5b2e8a;
             }
 
+            /* ── Font sizes matched to dispatchOrder form ── */
+            h1.main-text {
+                font-size: 30px !important;
+            }
+
+            h4.main-text {
+                font-size: 20px !important;
+            }
+
             .form-label {
-                font-weight: bold;
+                font-weight: 700;
+                font-size: 16px;
+                color: #5b2e8a;
+            }
+
+            .div-form {
+                font-size: 15px;
+            }
+
+            .form-control,
+            .form-select,
+            textarea.form-control {
+                font-size: 15px;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #1f2937;
             }
 
             .toggle-container {
@@ -61,12 +82,63 @@
                 opacity: 0.8;
             }
 
-
             #fetch-id-wrapper {
                 position: relative;
                 margin-bottom: 2.5rem !important;
                 /* Retains clear whitespace parameters */
             }
+
+            /* ── Button colors matched to dispatchOrder form ── */
+            #action-btn {
+                background: linear-gradient(135deg, #d97706, #f59e0b) !important;
+                color: #fff !important;
+                border: none !important;
+                border-radius: 24px !important;
+                font-weight: 700 !important;
+                font-size: 15px !important;
+                padding: 11px 26px !important;
+                box-shadow: 0 3px 10px rgba(0,0,0,0.12) !important;
+                transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease !important;
+            }
+            #action-btn:hover { filter: brightness(1.08) !important; transform: translateY(-2px) !important; }
+
+            #previous-btn {
+                background: linear-gradient(135deg, #4f46e5, #6366f1) !important;
+                color: #fff !important;
+                border: none !important;
+                border-right: 1px solid rgba(255,255,255,0.25) !important;
+                border-radius: 24px 0 0 24px !important;
+                font-weight: 700 !important;
+                font-size: 15px !important;
+                box-shadow: none !important;
+                transition: filter 0.15s ease !important;
+            }
+            #previous-btn:hover { filter: brightness(1.1) !important; }
+
+            #next-btn {
+                background: linear-gradient(135deg, #0891b2, #22d3ee) !important;
+                color: #fff !important;
+                border: none !important;
+                border-radius: 0 24px 24px 0 !important;
+                font-weight: 700 !important;
+                font-size: 15px !important;
+                box-shadow: none !important;
+                transition: filter 0.15s ease !important;
+            }
+            #next-btn:hover { filter: brightness(1.1) !important; }
+
+            a.btn[href*="dashboard"] {
+                background: linear-gradient(135deg, #dc2626, #f87171) !important;
+                color: #fff !important;
+                border: none !important;
+                border-radius: 24px !important;
+                font-weight: 700 !important;
+                font-size: 15px !important;
+                padding: 11px 26px !important;
+                box-shadow: 0 3px 10px rgba(0,0,0,0.12) !important;
+                transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease !important;
+            }
+            a.btn[href*="dashboard"]:hover { filter: brightness(1.08) !important; transform: translateY(-2px) !important; }
 
             .custom-alert-box {
                 position: absolute;
@@ -86,10 +158,11 @@
                 max-width: 350px;
                 box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             }
+
         </style>
     </head>
 
-    <body class="bg-primary-subtle d-flex align-items-center justify-content-center py-4" style="height: 100vh;">
+    <body class="bg-primary-subtle d-flex align-items-center justify-content-center">
 
         <div class="main-form border rounded-5 p-5 shadow-lg bg-white mx-auto">
             <div class="row m-0">
@@ -105,11 +178,11 @@
 
                     <form id="customer-form">
 
-                        <div class="mb-4 px-5 py-4 rounded-5 shadow-lg" style="background-color: #F3EAF9;">
+                        <div class="div-form mb-5 px-5 py-4 rounded-5 shadow-lg" style="background-color: #F3EAF9;">
 
                             <div id="fetch-id-wrapper" class="d-flex flex-column mb-4">
                                 <div id="fetch-id" class="d-flex align-items-center text-nowrap gap-3">
-                                    <label for="id" class="form-label mb-0" style="width: 120px;">Customer ID: <span
+                                    <label for="id" class="form-label mb-0" style="width: 150px;">Customer ID: <span
                                             class="text-danger">*</span></label>
                                     <input type="number" class="form-control" id="id" style="width: 120px;">
                                     <div class="d-flex align-items-center">
@@ -130,28 +203,30 @@
                             </div>
 
                             <div class="mb-4 d-flex align-items-center text-nowrap gap-3" style="margin-top: 25px;">
-                                <label for="name" class="form-label mb-0" style="width: 120px;">Full Name: <span
+                                <label for="name" class="form-label mb-0" style="width: 150px;">Full Name: <span
                                         class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="name"
                                     style="width: 350px; max-width: 100%;">
                             </div>
 
                             <div class="mb-4 d-flex align-items-start text-nowrap gap-3">
-                                <label for="address" class="form-label pt-1 mb-0" style="width: 120px;">Address:
+                                <label for="address" class="form-label pt-1 mb-0" style="width: 150px;">Address:
                                 </label>
                                 <textarea class="form-control" id="address" rows="3"
                                     style="width: 500px; max-width: 100%;"></textarea>
                             </div>
 
-                            <div class="mb-2 d-flex align-items-center text-nowrap gap-3">
-                                <label for="phone" class="form-label mb-0" style="width: 120px;">Phone: </label>
-                                <input type="text" class="form-control" id="phone"
-                                    style="width: 220px; max-width: 100%;">
+                            <div class="mb-4 d-flex flex-column">
+                                <div class="d-flex align-items-center text-nowrap gap-3">
+                                    <label for="phone" class="form-label mb-0" style="width: 150px;">Phone: </label>
+                                    <input type="text" class="form-control" id="phone" style="width: 150px; max-width: 100%;" maxlength="10">
+                                </div>
+                                <div id="phone-db-feedback" class="custom-alert-box mt-1"></div>
                             </div>
                         </div>
 
                         <div class="mb-2 d-flex justify-content-center mx-auto gap-3 pt-2">
-                            <button type="button" class="btn btn-warning rounded-3 px-5 fw-bold text-dark"
+                            <button type="button" class="btn btn-warning rounded-3 px-4 fw-bold text-dark"
                                 id="action-btn">Update</button>
 
                             <div class="btn-group rounded-pill overflow-hidden gap-1">

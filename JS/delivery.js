@@ -392,10 +392,10 @@ loadOrderIds();
 setFindMode(true);
 toggleFormMode(false);
 
-// initialize bootstrap popovers for any info buttons (click/focus)
+
 try {
     const popoverTriggerList = Array.from(document.querySelectorAll('[data-bs-toggle="popover"]'));
     popoverTriggerList.forEach((el) => new bootstrap.Popover(el));
 } catch (e) {
-    // ignore if bootstrap isn't available
+    
 }
